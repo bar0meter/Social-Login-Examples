@@ -5,19 +5,6 @@ const fb = require("../config/config");
 
 const User = require("../models/user");
 
-passport.serializeUser(function(user, done) {
-  console.log("hello");
-  done(null, user._id);
-  // if you use Model.id as your idAttribute maybe you'd want
-  // done(null, user.id);
-});
-
-passport.deserializeUser(function(id, done) {
-  User.findById(id, function(err, user) {
-    done(err, user);
-  });
-});
-
 passport.use(
   new FacebookStrategy(
     {
@@ -27,17 +14,19 @@ passport.use(
       profileFields: ["id", "displayName", "photos", "email"]
     },
     (accessToken, refreshToken, profile, done) => {
+      console.log(profile);
       User.findOne({ _id: profile.id }, (err, result) => {
         if (result) {
+          console.log("found");
           done(null, result);
         } else {
           const user = new User({
-            profileID: profile.id,
-            fullname: profile.displayName,
+            _id: profile.id,
+            name: profile.displayName,
             profilePic: profile.photos[0].value || "",
             email: profile.email
           });
-
+          console.log("New user", user);
           user.save(err => {
             done(null, user);
           });
@@ -46,6 +35,18 @@ passport.use(
     }
   )
 );
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+  // if you use Model.id as your idAttribute maybe you'd want
+  // done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+  User.findById(id, function(err, user) {
+    done(err, user);
+  });
+});
 
 router.get("/auth/facebook", passport.authenticate("facebook"));
 router.get(
