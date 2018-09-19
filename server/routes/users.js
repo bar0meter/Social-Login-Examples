@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const passport = require("passport");
 const FacebookStrategy = require("passport-facebook").Strategy;
+const uuid = require("uuid/v4");
 const fb = require("../config/config");
 
 const User = require("../models/user");
@@ -11,20 +12,22 @@ passport.use(
       clientID: fb.appID,
       clientSecret: fb.appSecret,
       callbackURL: fb.callbackURL,
-      profileFields: ["id", "displayName", "photos", "email"]
+      profileFields: ["id", "displayName", "photos", "emails"]
     },
     (accessToken, refreshToken, profile, done) => {
       console.log(profile);
-      User.findOne({ _id: profile.id }, (err, result) => {
+      User.findOne({ profileId: profile.id }, (err, result) => {
         if (result) {
           console.log("found");
           done(null, result);
         } else {
+          console.log(profile);
           const user = new User({
-            _id: profile.id,
+            _id: uuid(),
+            profileId: profile.id,
             name: profile.displayName,
             profilePic: profile.photos[0].value || "",
-            email: profile.email
+            email: profile.emails
           });
           console.log("New user", user);
           user.save(err => {
@@ -48,18 +51,28 @@ passport.deserializeUser(function(id, done) {
   });
 });
 
-router.get("/auth/facebook", passport.authenticate("facebook"));
+router.get(
+  "/auth/facebook",
+  passport.authenticate("facebook", { scope: ["email"] })
+);
 router.get(
   "/auth/facebook/callback",
   passport.authenticate("facebook", {
-    successRedirect: "/users",
     failureRedirect: "/"
-  })
+  }),
+  (req, res) => {
+    res.redirect("http://localhost:4200/home?id=" + req.user._id);
+  }
 );
 
 router.get("/users", async (req, res) => {
   const users = await User.find().sort("name");
   res.send(users);
+});
+
+router.get("/users/:id", async (req, res) => {
+  const user = await User.findById(req.params.id).sort("name");
+  res.send(user);
 });
 
 module.exports = router;
