@@ -10,4 +10,8 @@ export class LoginService {
   login() {
     return this.http.get("http://localhost:8000/auth/facebook");
   }
+
+  getUser(id: string) {
+    return this.http.get("http://localhost:8000/users/" + id);
+  }
 }

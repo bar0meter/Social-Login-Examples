@@ -1,6 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { mergeMap } from "rxjs/operators";
+import { switchMap } from "rxjs/operators";
+import { LoginService } from "../login.service";
 
 @Component({
   selector: "app-home",
@@ -10,12 +11,14 @@ import { mergeMap } from "rxjs/operators";
 export class HomeComponent implements OnInit {
   user;
   id: string;
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute, private ser: LoginService) {}
 
   ngOnInit() {
-    const routePromise = this.route.queryParams.toPromise();
-    routePromise.then(params => {
-      this.id = params["id"];
-    });
+    const profile = this.route.queryParams;
+    profile
+      .pipe(switchMap(params => this.ser.getUser(params["id"])))
+      .subscribe(value => {
+        this.user = value;
+      });
   }
 }

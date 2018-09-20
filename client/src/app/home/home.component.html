@@ -3,5 +3,8 @@
     <div class="card-header">
       <h2>Welcome Home</h2>
     </div>
+    <div class="card-body" *ngIf="user">
+      <img [src]="user.profilePic">
+    </div>
   </div>
 </div>
